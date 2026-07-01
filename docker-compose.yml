@@ -1,0 +1,25 @@
+services:
+  customer-tools:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: customer-tools
+    ports:
+      - "8000:80"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DB_PATH=/app/data/customer_service.db
+    restart: unless-stopped
+    networks:
+      - dify_default
+      - dify_ssrf
+
+networks:
+  dify_default:
+    external: true
+    name: docker_default
+
+  dify_ssrf:
+    external: true
+    name: docker_ssrf_proxy_network
