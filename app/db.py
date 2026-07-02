@@ -157,6 +157,109 @@ def init_db() -> None:
         )
     """)
 
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS discount_codes (
+            discount_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT,
+            cart_id TEXT,
+            customer_name TEXT,
+            product TEXT,
+            strategy TEXT,
+            discount_type TEXT,
+            value TEXT,
+            reason TEXT,
+            status TEXT,
+            created_at INTEGER
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS refund_reviews (
+            review_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id TEXT,
+            ticket_id INTEGER,
+            reason TEXT,
+            risk_level TEXT,
+            requested_action TEXT,
+            user_message TEXT,
+            status TEXT,
+            created_at INTEGER
+        )
+    """)
+
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS vision_assessments (
+            assessment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT,
+            conversation_id INTEGER,
+            order_id TEXT,
+            damage_detected INTEGER,
+            damage_type TEXT,
+            severity TEXT,
+            confidence REAL,
+            need_human_review INTEGER,
+            vision_summary TEXT,
+            created_at INTEGER
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS customer_profiles (
+            customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT UNIQUE,
+            name TEXT,
+            email TEXT,
+            preferred_language TEXT,
+            last_order_id TEXT,
+            purchase_count INTEGER,
+            risk_tags TEXT,
+            created_at INTEGER,
+            updated_at INTEGER
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS memory_items (
+            memory_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT,
+            customer_id INTEGER,
+            memory_type TEXT,
+            content TEXT,
+            source TEXT,
+            importance INTEGER,
+            created_at INTEGER,
+            updated_at INTEGER
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS bad_case_logs (
+            bad_case_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            case_id TEXT,
+            case_name TEXT,
+            user_message TEXT,
+            failure_type TEXT,
+            detail TEXT,
+            severity TEXT,
+            created_at INTEGER
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS evaluation_results (
+            evaluation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            suite_name TEXT,
+            total_cases INTEGER,
+            passed_cases INTEGER,
+            failed_cases INTEGER,
+            pass_rate REAL,
+            metrics_json TEXT,
+            created_at INTEGER
+        )
+    """)
+
     seed_orders = [
         ("ORD1001", "Alice", "18K Gold Ring", 129.99, "paid", "delivered", "US", "2026-06-01"),
         ("ORD1002", "Bob", "Silver Necklace", 59.99, "paid", "in_transit", "UK", "2026-06-05"),

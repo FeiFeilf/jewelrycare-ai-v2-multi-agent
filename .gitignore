@@ -19,3 +19,7 @@ data/*.sqlite3
 *Zone.Identifier
 .DS_Store
 Thumbs.db
+data/customer_service.db
+outputs/
+*.db
+*:Zone.Identifier

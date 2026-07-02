@@ -145,6 +145,85 @@ def run_react_planner_agent(result: Dict[str, Any]) -> Dict[str, Any]:
             success=bool(handoff_record.get("created")),
         )
 
+    vision_agent = result.get("vision_agent") or {}
+    vision_assessment = vision_agent.get("vision_assessment") or {}
+
+    if vision_agent and not vision_agent.get("skipped"):
+        add(
+            thought="售后场景需要结合图片证据或图片摘要进行多模态初筛，但最终处理仍需遵守人工复核边界。",
+            action="VisionAgent.analyze_damage_evidence",
+            action_input={
+                "order_id": order_id,
+                "has_image": vision_assessment.get("has_image"),
+                "vision_summary": vision_assessment.get("vision_summary"),
+            },
+            observation={
+                "damage_detected": vision_assessment.get("damage_detected"),
+                "damage_type": vision_assessment.get("damage_type"),
+                "severity": vision_assessment.get("severity"),
+                "confidence": vision_assessment.get("confidence"),
+                "need_human_review": vision_assessment.get("need_human_review"),
+            },
+            success=bool(vision_agent.get("success")),
+        )
+
+    memory_agent = result.get("memory_agent") or {}
+    if memory_agent:
+        add(
+            thought="需要记录用户偏好、近期订单和高风险标签，以支持后续跨轮次服务和个性化跟进。",
+            action="MemoryAgent.read_write_memory",
+            action_input={
+                "session_id": session_id,
+                "intent": intent,
+                "order_id": order_id,
+            },
+            observation={
+                "profile_id": (memory_agent.get("customer_profile") or {}).get("customer_id"),
+                "memory_created_count": memory_agent.get("memory_created_count"),
+                "recent_memory_count": len(memory_agent.get("recent_memories") or []),
+            },
+            success=bool(memory_agent.get("success")),
+        )
+
+
+    shopify_tools = result.get("shopify_tools") or {}
+
+    if shopify_tools.get("discount_code"):
+        discount_result = shopify_tools.get("discount_code") or {}
+        discount = discount_result.get("discount_code") or {}
+        add(
+            thought="弃单挽回需要生成可追踪的优惠码，因此调用模拟 Shopify 优惠码工具。",
+            action="ShopifyMockTool.create_discount_code",
+            action_input={"cart_id": cart_id},
+            observation={
+                "created": discount.get("created"),
+                "discount_id": discount.get("discount_id"),
+                "code": discount.get("code"),
+                "status": discount.get("status"),
+            },
+            success=bool(discount.get("created")),
+        )
+
+    if shopify_tools.get("refund_review"):
+        refund_result = shopify_tools.get("refund_review") or {}
+        review = refund_result.get("refund_review") or {}
+        add(
+            thought="售后或退款争议属于高风险业务动作，系统不能自动退款，只能创建退款审核记录。",
+            action="ShopifyMockTool.create_refund_review",
+            action_input={
+                "order_id": order_id,
+                "ticket_id": (result.get("ticket") or {}).get("ticket_id"),
+            },
+            observation={
+                "created": review.get("created"),
+                "review_id": review.get("review_id"),
+                "status": review.get("status"),
+                "business_rule": review.get("business_rule"),
+            },
+            success=bool(review.get("created")),
+        )
+
+
     tasks = result.get("tasks") or []
     add(
         thought="需要把本次处理结果转化为可跟进的业务任务，保证后续流程闭环。",

@@ -18,6 +18,19 @@ from app.tools.ticket_tool import list_tickets, get_ticket, update_ticket_status
 from app.tools.handoff_tool import list_handoffs, get_handoff, update_handoff_status
 from app.tools.recovery_tool import list_recovery_logs, update_recovery_conversion, update_recovery_touch
 from app.tools.task_tool import list_tasks, get_task, update_task_status
+from app.agents.vision_agent import list_vision_assessments
+from app.tools.memory_tool import list_memory_items, list_customer_profiles
+from app.tools.evaluation_tool import list_bad_case_logs, list_evaluation_results
+from app.tools.shopify_mock_tool import (
+    get_shopify_order,
+    get_shopify_cart,
+    create_discount_code,
+    create_refund_review,
+    list_discount_codes,
+    list_refund_reviews,
+    update_discount_code_status,
+    update_refund_review_status,
+)
 
 
 app = FastAPI(
@@ -178,6 +191,144 @@ def api_list_react_steps(
         "count": len(steps),
         "react_steps": steps
     }
+
+
+
+@app.get("/mock_shopify/orders/{order_id}")
+def api_mock_shopify_get_order(order_id: str):
+    return get_shopify_order(order_id)
+
+
+@app.get("/mock_shopify/carts/{cart_id}")
+def api_mock_shopify_get_cart(cart_id: str):
+    return get_shopify_cart(cart_id)
+
+
+@app.post("/mock_shopify/discount_codes")
+def api_mock_shopify_create_discount_code(payload: dict):
+    return create_discount_code(
+        cart_id=payload.get("cart_id"),
+        customer_name=payload.get("customer_name"),
+        product=payload.get("product"),
+        strategy=payload.get("strategy", "free_shipping"),
+        discount_type=payload.get("discount_type", "shipping"),
+        value=payload.get("value", "FREE_SHIPPING"),
+        reason=payload.get("reason", "manual_test")
+    )
+
+
+@app.post("/mock_shopify/refund_reviews")
+def api_mock_shopify_create_refund_review(payload: dict):
+    return create_refund_review(
+        order_id=payload.get("order_id"),
+        ticket_id=payload.get("ticket_id"),
+        reason=payload.get("reason", "manual_test"),
+        risk_level=payload.get("risk_level", "manual_review_required"),
+        requested_action=payload.get("requested_action", "refund_or_replacement_review"),
+        user_message=payload.get("user_message", ""),
+        status=payload.get("status", "pending_review")
+    )
+
+
+@app.get("/tools/discount_codes")
+def api_list_discount_codes(status: Optional[str] = None):
+    codes = list_discount_codes(status=status)
+    return {
+        "count": len(codes),
+        "discount_codes": codes
+    }
+
+
+@app.get("/tools/refund_reviews")
+def api_list_refund_reviews(status: Optional[str] = None):
+    reviews = list_refund_reviews(status=status)
+    return {
+        "count": len(reviews),
+        "refund_reviews": reviews
+    }
+
+
+@app.post("/tools/discount_codes/{discount_id}/status")
+def api_update_discount_code_status(discount_id: int, payload: dict):
+    return update_discount_code_status(discount_id, payload.get("status", ""))
+
+
+@app.post("/tools/refund_reviews/{review_id}/status")
+def api_update_refund_review_status(review_id: int, payload: dict):
+    return update_refund_review_status(review_id, payload.get("status", ""))
+
+
+
+@app.get("/tools/vision_assessments")
+def api_list_vision_assessments(limit: int = 100):
+    items = list_vision_assessments(limit=limit)
+    return {
+        "count": len(items),
+        "vision_assessments": items
+    }
+
+
+@app.get("/tools/memory_items")
+def api_list_memory_items(
+    session_id: Optional[str] = None,
+    customer_id: Optional[int] = None,
+    limit: int = 100
+):
+    items = list_memory_items(session_id=session_id, customer_id=customer_id, limit=limit)
+    return {
+        "count": len(items),
+        "memory_items": items
+    }
+
+
+@app.get("/tools/customer_profiles")
+def api_list_customer_profiles(limit: int = 100):
+    profiles = list_customer_profiles(limit=limit)
+    return {
+        "count": len(profiles),
+        "customer_profiles": profiles
+    }
+
+
+@app.get("/tools/bad_case_logs")
+def api_list_bad_case_logs(limit: int = 100):
+    logs = list_bad_case_logs(limit=limit)
+    return {
+        "count": len(logs),
+        "bad_case_logs": logs
+    }
+
+
+@app.get("/tools/evaluation/results")
+def api_list_evaluation_results(limit: int = 20):
+    results = list_evaluation_results(limit=limit)
+    return {
+        "count": len(results),
+        "evaluation_results": results
+    }
+
+
+@app.post("/tools/evaluation/run")
+def api_run_evaluation():
+    from app.agents.evaluation_agent import run_evaluation_suite
+    from app.orchestrator_v4 import orchestrate_message_v4
+    from app.schemas import HandleMessageRequest
+
+    return run_evaluation_suite(orchestrate_message_v4, HandleMessageRequest)
+
+
+
+@app.post("/tools/vision_from_url")
+def api_vision_from_url(payload: dict):
+    from app.tools.vision_adapter import analyze_image_url
+
+    message = payload.get("message", "")
+    image_url = payload.get("image_url") or payload.get("url")
+
+    return analyze_image_url(
+        message=message,
+        image_url=image_url
+    )
 
 
 @app.get("/tools/dashboard/summary")

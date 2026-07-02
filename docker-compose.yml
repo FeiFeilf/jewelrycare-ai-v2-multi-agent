@@ -8,6 +8,8 @@ services:
       - "8000:80"
     volumes:
       - ./data:/app/data
+    env_file:
+      - .env
     environment:
       - DB_PATH=/app/data/customer_service.db
     restart: unless-stopped
