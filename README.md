@@ -205,3 +205,10 @@ tasks：记录后续待办任务
 ```
 
 这三个表是证明项目从普通客服接口升级为闭环 Multi-Agent 系统的关键。
+
+## Project Documentation
+
+- [完整项目说明书：从最小 MVP 到 v2 Multi-Agent 系统](docs/PROJECT_OVERVIEW.md)
+- [项目演进说明](docs/PROJECT_EVOLUTION.md)
+- [阶段 5 Bad Case 评测报告](docs/eval_reports/stage5_eval_report_80cases_95pass.md)
+
