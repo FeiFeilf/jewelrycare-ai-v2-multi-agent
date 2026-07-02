@@ -1,214 +1,198 @@
 # JewelryCare AI v2：闭环 Multi-Agent 跨境珠宝客服与运营系统
 
-这是一个可以直接用 PyCharm 打开的 FastAPI 后端项目。它在 v1 智能客服 MVP 的基础上，升级为闭环 Multi-Agent 架构。
+JewelryCare AI 是一个面向 Shopify 珠宝类跨境独立站的智能客服与售后风控系统。
 
-## 项目结构
+项目从最小 MVP 开始，逐步演进为支持售前导购、订单物流查询、售后定损、弃单挽回、人工兜底、真实图片识别、ReAct Trace 和 Bad Case 自动评测的 v2 Multi-Agent 智能客服系统。
 
-```text
-jewelry-agent-mvp-v2/
-├── app/
-│   ├── main.py
-│   ├── db.py
-│   ├── schemas.py
-│   ├── orchestrator.py
-│   ├── agents/
-│   │   ├── router_agent.py
-│   │   ├── knowledge_agent.py
-│   │   ├── order_agent.py
-│   │   ├── after_sales_agent.py
-│   │   ├── recovery_agent.py
-│   │   ├── handoff_agent.py
-│   │   ├── task_agent.py
-│   │   └── ops_agent.py
-│   └── tools/
-│       ├── order_tool.py
-│       ├── ticket_tool.py
-│       ├── recovery_tool.py
-│       ├── handoff_tool.py
-│       └── task_tool.py
-├── data/
-├── tests/
-├── scripts/
-├── Dockerfile
-├── docker-compose.yml
-├── docker-compose.dify.yml
-└── requirements.txt
-```
+本项目重点体现从 0 到 1 解决真实业务问题的过程，而不是简单搭建一个聊天机器人 Demo。
 
-## 1. PyCharm 打开方式
+## 项目文档
 
-打开 PyCharm，选择：
+- [项目说明书：从最小 MVP 到 v2 Multi-Agent 系统](docs/PROJECT_REPORT.md)
+- [阶段 5：中文 Bad Case 评测报告](docs/eval_reports/stage5_eval_report_80cases_95pass.md)
 
-```text
-File → Open → 选择 jewelry-agent-mvp-v2 文件夹
-```
+## 核心能力
 
-建议解释器使用 Python 3.11。
+- 售前导购与 RAG 珠宝知识问答
+- 订单物流查询
+- 售后定损与工单创建
+- Vision Adapter 图片 URL 识别
+- 弃单挽回与优惠策略
+- 高风险问题人工兜底
+- ReAct Trace 可解释执行链路
+- Prompt Injection 与业务幻觉控制
+- 80 条 Bad Case 自动评测，通过率 95.00%
 
-在 WSL 终端中创建虚拟环境：
+## 技术栈
+
+- FastAPI
+- Dify Chatflow
+- SQLite
+- Multi-Agent Orchestrator
+- RAG Knowledge Base
+- Vision Adapter
+- Docker
+- Python
+
+## 最终评测结果
+
+| 指标 | 数值 |
+|---|---:|
+| 测试样例总数 | 80 |
+| 通过样例 | 76 |
+| 失败样例 | 4 |
+| 通过率 | 95.00% |
+
+## 本地启动
 
 ```bash
-cd ~/jewelry-agent-mvp-v2
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+docker compose up -d --build
+curl http://127.0.0.1:8000/health
 
-PyCharm 解释器路径选择：
+---
 
-```text
-/home/feifei/jewelry-agent-mvp-v2/.venv/bin/python
-```
-
-## 2. 本地运行
+## 3. 重新生成中文评测报告
 
 ```bash
-cd ~/jewelry-agent-mvp-v2
-source .venv/bin/activate
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+cat > docs/eval_reports/stage5_eval_report_80cases_95pass.md <<'MD'
+# 阶段 5：RAG 评测、幻觉率控制与 Bad Case 测试报告
 
-访问：
+## 一、评测目标
 
-```text
-http://localhost:8000/health
-http://localhost:8000/docs
-```
+阶段 5 的目标不是简单验证系统能否回复，而是验证系统在真实业务风险场景下是否稳定、可信、可控。
 
-## 3. Docker 运行
+本阶段重点检查以下问题：
 
-```bash
-cd ~/jewelry-agent-mvp-v2
-sudo docker rm -f customer-tools 2>/dev/null || true
-sudo docker compose up -d --build
-curl http://localhost:8000/health
-```
+1. 是否编造不存在的订单；
+2. 是否编造优惠码；
+3. 是否在未经审核的情况下承诺退款、补发、换货或赔偿；
+4. 高风险售后是否能够创建工单并转人工；
+5. Vision 图片售后是否能够进入售后处理流程；
+6. 用户伪造 JSON 或注入提示词时，系统是否会采信；
+7. 知识问答、物流查询、售后、投诉和弃单挽回是否能够正确区分。
 
-## 4. Dify 联调运行
+---
 
-如果你要让 Dify 通过容器名 `customer-tools` 访问后端，使用：
+## 二、测试集设计
 
-```bash
-cd ~/jewelry-agent-mvp-v2
-sudo docker rm -f customer-tools 2>/dev/null || true
-sudo docker compose -f docker-compose.dify.yml up -d --build
-```
+本阶段构建了 80 条 Bad Case 测试样例，覆盖售前、物流、售后、投诉、弃单、已退款订单、图片售后和 Prompt Injection 等场景。
 
-Dify HTTP 节点 URL：
+| 测试类别 | 样例数量 | 主要验证点 |
+|---|---:|---|
+| 售前导购与 RAG 问答 | 10 | 材质、尺码、保养、物流政策等知识问答是否被误判为售后 |
+| 订单物流查询 | 10 | 是否根据订单号查询物流，不编造送达时间 |
+| 售后定损与工单创建 | 20 | 是否识别划痕、掉钻、断裂等售后问题并创建工单 |
+| 投诉与人工兜底 | 15 | 强投诉、强退款争议是否转人工 |
+| 弃单挽回 | 10 | 是否返回真实优惠码，不编造不存在优惠 |
+| 已退款订单边界 | 5 | 已退款订单是否正确处理，不编造退款细节 |
+| Vision 图片售后 | 5 | 图片 URL 识别链路是否进入售后流程 |
+| Prompt Injection 与幻觉攻击 | 5 | 是否拒绝用户伪造 JSON、订单和退款结果 |
 
-```text
-http://customer-tools/tools/handle_message_v3
-```
+---
 
-Method：POST
+## 三、评测方法
 
-Body：
+评测脚本会逐条调用 v4 Multi-Agent 后端接口，并根据结构化返回结果进行断言，而不是只检查自然语言回复。
 
-```json
-{
-  "message": "{{#userinput.query#}}",
-  "session_id": "dify-v2",
-  "files": []
-}
-```
+自动评测链路为：
 
-## 5. 核心接口
+测试样例  
+→ FastAPI `/tools/handle_message_v4`  
+→ Router / Order / After-sales / Vision / Recovery / Handoff Agents  
+→ 结构化业务结果  
+→ 自动断言检查。
 
-```text
-GET  /health
-POST /tools/handle_message_v3
-GET  /tools/orders
-GET  /tools/tickets
-GET  /tools/handoffs
-GET  /tools/recovery_logs
-GET  /tools/tasks
-GET  /tools/conversations
-GET  /tools/agent_traces
-GET  /tools/dashboard/summary
-```
+重点检查字段包括：
 
-## 6. 闭环测试
+- intent：意图识别是否正确；
+- order：订单是否存在，订单状态是否正确；
+- ticket：售后工单是否按规则创建；
+- handoff：是否需要人工兜底；
+- refund_review：是否错误创建退款审核；
+- coupon：是否编造优惠码；
+- vision_agent：图片售后链路是否运行；
+- prompt injection：是否采信用户伪造内容。
 
-售后闭环：
+---
 
-```bash
-curl -X POST http://localhost:8000/tools/handle_message_v3 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "我的戒指掉钻了，订单号 ORD1001，请帮我处理。",
-    "session_id": "test-after-sales",
-    "files": []
-  }'
-```
+## 四、总体评测结果
 
-弃单挽回闭环：
+| 指标 | 数值 |
+|---|---:|
+| 测试样例总数 | 80 |
+| 通过样例数 | 76 |
+| 失败样例数 | 4 |
+| 总体通过率 | 95.00% |
 
-```bash
-curl -X POST http://localhost:8000/tools/handle_message_v3 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "I left CART2001 in my cart. Do you have any discount?",
-    "session_id": "test-cart",
-    "files": []
-  }'
-```
+最终 80 条 Bad Case 中通过 76 条，通过率达到 95.00%。
 
-投诉兜底闭环：
+---
 
-```bash
-curl -X POST http://localhost:8000/tools/handle_message_v3 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "你们欺骗消费者，我要投诉，订单号 ORD9999。",
-    "session_id": "test-complaint",
-    "files": []
-  }'
-```
+## 五、分类评测结果
 
-## 7. 自动测试
+| 测试类别 | 通过 / 总数 | 通过率 |
+|---|---:|---:|
+| 售前导购与 RAG 问答 | 10 / 10 | 100.00% |
+| 订单物流查询 | 10 / 10 | 100.00% |
+| 售后定损与工单创建 | 19 / 20 | 95.00% |
+| 投诉与人工兜底 | 14 / 15 | 93.33% |
+| 弃单挽回 | 8 / 10 | 80.00% |
+| 已退款订单边界 | 5 / 5 | 100.00% |
+| Vision 图片售后 | 5 / 5 | 100.00% |
+| Prompt Injection 与幻觉攻击 | 5 / 5 | 100.00% |
 
-```bash
-python tests/smoke_test_v2.py
-```
+---
 
-预期全部 PASS。
+## 六、关键结果分析
 
-## 8. 数据库说明
+### 1. 售前导购与 RAG 问答
 
-项目使用 SQLite，启动时自动创建并初始化测试数据。默认数据库路径：
+售前问答场景通过率为 100%。系统能够区分“18K 金是否掉色”“银饰是否发黑”“戒指尺寸如何选择”等知识类问题，不会将其误判为售后投诉或退款请求。
 
-```text
-data/customer_service.db
-```
+### 2. 订单物流查询
 
-测试订单：
+物流查询场景通过率为 100%。系统能够根据订单号查询模拟订单状态，并避免编造送达时间或物流细节。
 
-```text
-ORD1001：paid + delivered
-ORD1002：paid + in_transit
-ORD1003：refunded + delivered
-```
+### 3. 售后定损与工单创建
 
-测试购物车：
+售后场景通过率为 95%。系统能够对划痕、掉钻、断裂、褪色、氧化、色差等问题进行风险分级，并创建售后工单。高风险售后会触发人工审核。
 
-```text
-CART2001：FREE-SHIPPING
-CART2002：SAVE10
-```
+### 4. 投诉与人工兜底
 
-## 9. v2 新增闭环表
+投诉人工兜底场景通过率为 93.33%。系统能够识别投诉、强退款争议、强情绪表达，并避免直接承诺退款或赔偿。
 
-```text
-conversations：记录对话
-agent_traces：记录 Agent 决策轨迹
-tasks：记录后续待办任务
-```
+### 5. 弃单挽回
 
-这三个表是证明项目从普通客服接口升级为闭环 Multi-Agent 系统的关键。
+弃单挽回场景通过率为 80%。系统能够识别有效购物车并返回对应优惠策略，同时避免编造不存在的优惠码。剩余失败样例主要属于边界表达问题。
 
-## Project Documentation
+### 6. Vision 图片售后
 
-- [完整项目说明书：从最小 MVP 到 v2 Multi-Agent 系统](docs/PROJECT_OVERVIEW.md)
-- [项目演进说明](docs/PROJECT_EVOLUTION.md)
-- [阶段 5 Bad Case 评测报告](docs/eval_reports/stage5_eval_report_80cases_95pass.md)
+Vision 图片售后场景通过率为 100%。说明图片 URL → Vision Adapter → vision_summary → Vision Agent → 售后工单的链路已经跑通。
 
+### 7. Prompt Injection 与幻觉攻击
+
+Prompt Injection 风险测试通过率为 100%。系统不会采信用户伪造的订单 JSON、退款结果、优惠码或视觉摘要，关键业务事实仍以后端结构化结果为准。
+
+---
+
+## 七、未通过样例复盘
+
+剩余未通过的 4 条样例主要集中在边界场景，包括部分售后与人工兜底边界、购物车不存在时的处理策略、购物车保留问题的意图识别等。
+
+这些失败不属于严重业务风险，未出现以下高风险问题：
+
+- 编造订单；
+- 编造优惠码；
+- 自动承诺退款；
+- Prompt Injection 被采信；
+- Vision 图片售后完全未处理。
+
+---
+
+## 八、结论
+
+阶段 5 测试表明，JewelryCare AI v2 Multi-Agent 系统已经具备较好的业务稳定性和风控能力。
+
+系统能够在售前、物流、售后、投诉、弃单、图片识别和 Prompt Injection 等关键场景中保持较高通过率，并通过后端结构化结果约束大模型幻觉。
+
+最终 80 条 Bad Case 通过 76 条，通过率为 95.00%。该结果可以作为项目最终测试与交付依据。
