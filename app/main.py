@@ -11,6 +11,7 @@ from app.schemas import (
     TaskStatusUpdate,
 )
 from app.orchestrator import orchestrate_message_v3
+from app.orchestrator_v4 import orchestrate_message_v4
 from app.agents.ops_agent import dashboard_summary, ticket_stats, recovery_stats
 from app.tools.order_tool import list_orders
 from app.tools.ticket_tool import list_tickets, get_ticket, update_ticket_status
@@ -39,6 +40,12 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "customer-tools", "version": "2.0.0", "db_path": DB_PATH}
+
+
+
+@app.post("/tools/handle_message_v4", operation_id="handle_customer_message_v4")
+def handle_message_v4(req: HandleMessageRequest):
+    return orchestrate_message_v4(req)
 
 
 @app.post("/tools/handle_message_v3", operation_id="handle_customer_message_v3")
@@ -150,6 +157,27 @@ def api_list_agent_traces(conversation_id: Optional[int] = None):
         """).fetchall()
     conn.close()
     return {"count": len(rows), "agent_traces": [dict(row) for row in rows]}
+
+
+
+@app.get("/tools/react_steps")
+def api_list_react_steps(
+    conversation_id: Optional[int] = None,
+    session_id: Optional[str] = None,
+    limit: int = 100
+):
+    from app.tools.react_tool import list_react_steps
+
+    steps = list_react_steps(
+        conversation_id=conversation_id,
+        session_id=session_id,
+        limit=limit
+    )
+
+    return {
+        "count": len(steps),
+        "react_steps": steps
+    }
 
 
 @app.get("/tools/dashboard/summary")

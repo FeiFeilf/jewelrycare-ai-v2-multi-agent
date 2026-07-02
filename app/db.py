@@ -141,6 +141,22 @@ def init_db() -> None:
     ]:
         ensure_column(cur, "tickets", col, typ)
 
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS react_steps (
+            step_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT,
+            conversation_id INTEGER,
+            step_index INTEGER,
+            thought TEXT,
+            action TEXT,
+            action_input TEXT,
+            observation TEXT,
+            success INTEGER,
+            created_at INTEGER
+        )
+    """)
+
     seed_orders = [
         ("ORD1001", "Alice", "18K Gold Ring", 129.99, "paid", "delivered", "US", "2026-06-01"),
         ("ORD1002", "Bob", "Silver Necklace", 59.99, "paid", "in_transit", "UK", "2026-06-05"),
